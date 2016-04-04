@@ -9,6 +9,10 @@ function Model(vertices) {
 	this.zPos = 0;
 	this.vertexBuffId = null;
 	this.colorBuffId = null;
+	this.autoRotate = true;
+	this.textureCoordsId = null;
+	this.texture = null;
+	this.textureCoords = null;
 }
 
 Model.prototype.bufferData = function() {
@@ -22,23 +26,122 @@ Model.prototype.bufferData = function() {
 		this.colorBuffId = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffId);
 		gl.bufferData(gl.ARRAY_BUFFER, flatten(this.colors), gl.STATIC_DRAW);
+	} else {
+		// fill colors with 1.0 since they get multiplied by the texture color value ;)
+		this.colorBuffId = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffId);
+		this.colors = [];
+		for(var i = 0; i < this.vertices.length / 3; i++) {
+			this.colors.push(1.0);
+			this.colors.push(1.0);
+			this.colors.push(1.0);
+			this.colors.push(1.0);
+		}
+		gl.bufferData(gl.ARRAY_BUFFER, flatten(this.colors), gl.STATIC_DRAW);
 	}
+
+	// Buffer texture
+	var tex = gl.createTexture();
+	var img = new Image();
+	img.onload = function() {
+		gl.bindTexture(gl.TEXTURE_2D, tex);
+	  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+	  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+	  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+	  gl.generateMipmap(gl.TEXTURE_2D);
+	  gl.bindTexture(gl.TEXTURE_2D, null);
+	}
+
+	if (this.texture != null) {
+		img.src = this.texture;
+		this.texture = tex;
+	} else {
+		img.src = "whitepixel.jpg" // white pixel for no textures
+		this.texture = tex;
+	}
+
+	// since there's no tex coords defined, just create some default ones
+	if (this.textureCoords == null) {
+		this.textureCoords = [];
+		for(var i = 0; i < this.vertices.length / 3; i++) {
+			this.textureCoords.push(0.0);
+			this.textureCoords.push(0.0);
+		}
+	}
+	this.textureCoordsId = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordsId);
+	gl.bufferData(gl.ARRAY_BUFFER, flatten(this.textureCoords), gl.STATIC_DRAW);
 }
 
 Model.prototype.getMatrix = function() {
 	return mult(translate(this.xPos, this.yPos, this.zPos), mult(mult(rotate(this.xRot, vec3(1, 0, 0)), rotate(this.yRot, vec3(0, 1, 0))), rotate(this.zRot, vec3(0, 0, 1))));
 }
 
-Model.prototype.drawModel = function() {
+Model.prototype.drawModel = function(wireframe) {
 	// rebind model vertices and color
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffId);
-	gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);
+	gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffId);
-	gl.vertexAttribPointer(vVertexColor, 4, gl.FLOAT, false, 0, 0);
+	gl.vertexAttribPointer(aVertexColor, 4, gl.FLOAT, false, 0, 0);
+	gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordsId);
+	gl.vertexAttribPointer(aTextureCoord, 2, gl.FLOAT, false, 0, 0);
+	gl.activeTexture(gl.TEXTURE0);
+	gl.bindTexture(gl.TEXTURE_2D, this.texture);
 
 	// draw
-	gl.drawArrays(gl.TRIANGLES, 0, this.vertices.length / 3);
+	if (!wireframe)
+		gl.drawArrays(gl.TRIANGLES, 0, this.vertices.length / 3);
+	else
+		gl.drawArrays(gl.LINES, 0, this.vertices.length / 3);
 }
+
+Model.prototype.setTexture = function(texture, coords) {
+	// set texture
+	this.texture = texture;
+	this.textureCoords = coords;
+}
+
+var axis = new Model([
+	0.0, 0.0, -10.0,
+	0.0, 0.0, 10.0,
+	10.0, 0.0, 0.0,
+	-10.0, 0.0, 0.0,
+	0.0, 10.0, 0.0,
+	0.0, -10.0, 0.0
+]);
+axis.colors = [
+	1.0, 0.0, 0.0, 1.0,
+	1.0, 0.0, 0.0, 1.0,
+	0.0, 1.0, 0.0, 1.0,
+	0.0, 1.0, 0.0, 1.0,
+	0.0, 0.0, 1.0, 1.0,
+	0.0, 0.0, 1.0, 1.0
+];
+axis.xPos = 0.0;
+axis.yPos = 0.0;
+axis.zPos = 0.0;
+axis.xRot = 0.0;
+axis.yRot = 0.0;
+axis.zRot = 0.0;
+axis.autoRotate = false;
+
+var floor = new Model([
+	-10.0, -2.0, 10.0,
+	10.0, -2.0, 10.0,
+	-10.0, -2.0, -10.0,
+	-10.0, -2.0, -10.0,
+	10.0, -2.0, -10.0,
+	10.0, -2.0, 10.0
+]);
+floor.setTexture("tiles.jpg", [
+	0.0, 0.0,
+	1.0, 0.0,
+	0.0, 1.0,
+	0.0, 1.0,
+	1.0, 1.0,
+	1.0, 0.0
+]);
+floor.autoRotate = false;
 
 var pyramid = new Model([
 	-1.0, -1.0, 1.0,
@@ -526,7 +629,8 @@ var cube = new Model([
 	1.0, -1.0, -1.0,
 	-1.0, -1.0, -1.0
 ]);
-cube.colors = [
+
+/*cube.colors = [
 	1.0, 0.0, 0.0, 1.0, // front
 	0.0, 1.0, 0.0, 1.0,
 	0.0, 0.0, 1.0, 1.0,
@@ -563,11 +667,50 @@ cube.colors = [
 	0.0, 1.0, 0.0, 1.0,
 	0.0, 1.0, 0.0, 1.0,
 	1.0, 0.0, 0.0, 1.0
-];
-cube.zPos = -10.0;
+];*/
+cube.setTexture("crate.jpg", [
+	0.0, 1.0, // front
+	0.0, 0.0,
+	1.0, 0.0,
+	1.0, 0.0,
+	1.0, 1.0,
+	0.0, 1.0,
+	0.0, 1.0, // top
+	0.0, 0.0,
+	1.0, 0.0,
+	1.0, 0.0,
+	1.0, 1.0,
+	0.0, 1.0,
+	0.0, 1.0, // left
+	0.0, 0.0,
+	1.0, 0.0,
+	1.0, 0.0,
+	1.0, 1.0,
+	0.0, 1.0,
+	0.0, 1.0, // right
+	0.0, 0.0,
+	1.0, 0.0,
+	1.0, 0.0,
+	1.0, 1.0,
+	0.0, 1.0,
+	0.0, 1.0, // back
+	0.0, 0.0,
+	1.0, 0.0,
+	1.0, 0.0,
+	1.0, 1.0,
+	0.0, 1.0,
+	0.0, 1.0, // bottom
+	0.0, 0.0,
+	1.0, 0.0,
+	1.0, 0.0,
+	1.0, 1.0,
+	0.0, 1.0,
+]);
+cube.zPos = 0.0;
 cube.xPos = 0.0;
 cube.yPos = 0.0;
 cube.xRot = 20.0;
 cube.yRot = 50.0;
 
-var models = [cube];
+// axis must always be the first element
+var models = [axis, floor, cube];

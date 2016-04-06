@@ -169,15 +169,15 @@ var MakeSphere = function(longitudeBands, latitudeBands, radius) {
 	sphere.textureCoords = texCoords;
 	sphere.colors = [];
 	for(var i = 0; i < sphere.vertices.length / 3; i++) {
-		sphere.colors.push(i % 0.9);
-		sphere.colors.push((i + 1) % 0.9);
-		sphere.colors.push((i + 2) % 0.9);
+		sphere.colors.push(1.0);
+		sphere.colors.push(1.0);
+		sphere.colors.push(1.0);
 		sphere.colors.push(1.0);
 	}
 	return sphere;
 }
 
-var sphere = MakeSphere(10, 10, 2);
+var sphere = MakeSphere(30, 30, 0.5);
 sphere.xPos = 10;
 
 var axis = new Model([

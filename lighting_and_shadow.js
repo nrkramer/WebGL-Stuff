@@ -48,7 +48,7 @@ window.onload = function init(){
 	canvas.width = $(window).width();
 	canvas.height = $(window).height();
 	gl.viewport(0, 0, canvas.width, canvas.height);
-	gl.clearColor(0.8, 0.8, 0.8, 1.0);
+	gl.clearColor(0.1, 0.1, 0.1, 1.0);
 	gl.clearDepth(1.0);
 	gl.enable(gl.DEPTH_TEST);
 	gl.depthFunc(gl.LEQUAL);

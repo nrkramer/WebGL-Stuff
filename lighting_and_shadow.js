@@ -1,5 +1,8 @@
 var gl;
 
+// Frame counter
+var frame = 0;
+
 // Camera
 var viewMatrix;
 var cameraRotX = 0.96;
@@ -30,6 +33,7 @@ var uSampler;
 
 // Booleans
 var autoRotate = true;
+var autoMove = true;
 var showAxis = true;
 var showGrid = false;
 var showSkybox = false;
@@ -102,8 +106,11 @@ window.onload = function init(){
 			cameraPosXA = -1.0;
 		} else if (event.keyCode == 68) { // for 'd'
 			cameraPosXA = 1.0;
-		} else {
-		}
+		} else if (event.keyCode == 81) { // for 'q'
+			cameraPosYA = 1.0;
+		} else if (event.keyCode == 69) { // for 'e'
+			cameraPosYA = -1.0;
+		} else {}
 	});
 	document.addEventListener('keyup', function(event) {
 		if(event.keyCode == 87)
@@ -115,8 +122,11 @@ window.onload = function init(){
 			cameraPosXA = 0.0;
 		} else if (event.keyCode == 68) { // for 'd'
 			cameraPosXA = 0.0;
-		} else {
-		}
+		} else if (event.keyCode == 81) { // for 'q'
+			cameraPosYA = 0.0;
+		} else if (event.keyCode == 69) { // for 'e'
+			cameraPosYA = 0.0;
+		} else {}
 	});
 	canvas.addEventListener('mouseup', function(event) {
 		canvas.style.cursor = "default";
@@ -142,6 +152,9 @@ window.onload = function init(){
 	$("#rotateCheck").change(function() {
 		autoRotate = $(this).is(':checked');
 	});
+	$("#movementCheck").change(function() {
+		autoMove = $(this).is(':checked');
+	});
 	$("#axisCheck").change(function() {
 		showAxis = $(this).is(':checked');
 	});
@@ -158,17 +171,24 @@ function updateCamera() {
 		cameraPosXS += 0.01;
 	if (cameraPosXS > cameraPosXA)
 		cameraPosXS -= 0.01;
+	if (cameraPosYS < cameraPosYA)
+		cameraPosYS += 0.01;
+	if (cameraPosYS > cameraPosYA)
+		cameraPosYS -= 0.01;
 	if (cameraPosZS < cameraPosZA)
 		cameraPosZS += 0.01;
 	if (cameraPosZS > cameraPosZA)
 		cameraPosZS -= 0.01;
-	if ((cameraPosZS > -0.01) && (cameraPosZS < 0.01)) // clamp values
-		cameraPosZS = 0.0;
 	if ((cameraPosXS > -0.01) && (cameraPosXS < 0.01))
 		cameraPosXS = 0.0;
+	if ((cameraPosYS > -0.01) && (cameraPosYS < 0.01))
+		cameraPosYS = 0.0;
+	if ((cameraPosZS > -0.01) && (cameraPosZS < 0.01)) // clamp values
+		cameraPosZS = 0.0;
 
-	cameraPosX += cameraPosXS; // add speed to position
-	cameraPosZ += cameraPosZS; // add speed to position
+	cameraPosX += cameraPosXS; // add speed to X position
+	cameraPosY += cameraPosYS; // add speed to Y position
+	cameraPosZ += cameraPosZS; // add speed to Z position
 	var xRot = vec3(1.0 * Math.cos(cameraRotX), 0.0, -1.0 * Math.sin(cameraRotX));
 	var yRot = vec3(0.0, 1.0 * Math.sin(cameraRotY), 1.0 * Math.cos(cameraRotY));
 	var eye = vec3(cameraPosX, cameraPosY, cameraPosZ);
@@ -180,11 +200,24 @@ function updateCamera() {
 	$("#rotationText").html("Rotation: (" + Math.sin(cameraRotX).toFixed(2) + ", " + cameraRotY.toFixed(2) + ", " + cameraRotZ.toFixed(2) + ")");
 }
 
-// rotate models
+// auto-move models
+function moveModels() {
+	if (autoMove) {
+		for(var i = 3; i < models.length; i++) {
+			if (models[i].showcase) {
+				models[i].xPos = 10.0 * Math.cos(frame / 60.0);
+				models[i].zPos = 10.0 * Math.sin(frame / 60.0);
+				models[i].yPos = 10.0 * Math.sin(frame / 60.0);
+			}
+		}
+	}
+}
+
+// auto-rotate models
 function rotateModels() {
 	if (autoRotate) {
 		for(var i = 1; i < models.length; i++) {
-			if (models[i].autoRotate) {
+			if (models[i].showcase) {
 				models[i].xRot += 1.0;
 				models[i].yRot += 1.0;
 			}
@@ -194,11 +227,13 @@ function rotateModels() {
 
 // render everything
 function render() {
+	frame++;
 	// clear
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	updateCamera();
 	rotateModels();
+	moveModels();
 
 	// render axis
 	if (showAxis) {

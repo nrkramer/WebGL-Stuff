@@ -11,7 +11,7 @@ function Model(vertices) {
 	this.vertexBuffId = null;
 	this.indexBuffId = null;
 	this.colorBuffId = null;
-	this.autoRotate = true;
+	this.showcase = true;
 	this.textureCoordsId = null;
 	this.texture = null;
 	this.textureCoords = null;
@@ -27,7 +27,7 @@ Model.prototype.bufferData = function() {
 	if (this.indices != null) {
 		this.indexBuffId = gl.createBuffer();
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffId);
-		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, flatten(this.indices), gl.STATIC_DRAW);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indices), gl.STATIC_DRAW);
 	}
 
 	// Buffer color data if it exists
@@ -169,9 +169,9 @@ var MakeSphere = function(longitudeBands, latitudeBands, radius) {
 	sphere.textureCoords = texCoords;
 	sphere.colors = [];
 	for(var i = 0; i < sphere.vertices.length / 3; i++) {
-		sphere.colors.push(1.0);
-		sphere.colors.push(1.0);
-		sphere.colors.push(1.0);
+		sphere.colors.push(i % 0.9);
+		sphere.colors.push((i + 1) % 0.9);
+		sphere.colors.push((i + 2) % 0.9);
 		sphere.colors.push(1.0);
 	}
 	return sphere;
@@ -179,7 +179,6 @@ var MakeSphere = function(longitudeBands, latitudeBands, radius) {
 
 var sphere = MakeSphere(10, 10, 2);
 sphere.xPos = 10;
-console.log(sphere);
 
 var axis = new Model([
 	0.0, 0.0, -10.0,
@@ -203,7 +202,7 @@ axis.zPos = 0.0;
 axis.xRot = 0.0;
 axis.yRot = 0.0;
 axis.zRot = 0.0;
-axis.autoRotate = false;
+axis.showcase = false;
 
 var floor = new Model([
 	-10.0, -2.0, 10.0,
@@ -221,7 +220,7 @@ floor.setTexture("tiles.jpg", [
 	1.0, 1.0,
 	1.0, 0.0
 ]);
-floor.autoRotate = false;
+floor.showcase = false;
 
 var pyramid = new Model([
 	-1.0, -1.0, 1.0,

@@ -1,5 +1,6 @@
 function Model(vertices) {
 	this.vertices = vertices;
+	this.indices = null;
 	this.colors = null;
 	this.xRot = 0;
 	this.yRot = 0;
@@ -8,6 +9,7 @@ function Model(vertices) {
 	this.yPos = 0;
 	this.zPos = 0;
 	this.vertexBuffId = null;
+	this.indexBuffId = null;
 	this.colorBuffId = null;
 	this.autoRotate = true;
 	this.textureCoordsId = null;
@@ -20,6 +22,13 @@ Model.prototype.bufferData = function() {
 	this.vertexBuffId = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffId);
 	gl.bufferData(gl.ARRAY_BUFFER, flatten(this.vertices), gl.STATIC_DRAW);
+
+	// Buffer index buffer if it exists
+	if (this.indices != null) {
+		this.indexBuffId = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffId);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, flatten(this.indices), gl.STATIC_DRAW);
+	}
 
 	// Buffer color data if it exists
 	if (this.colors != null) {
@@ -52,6 +61,7 @@ Model.prototype.bufferData = function() {
 	  gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 
+	// use a white pixel as the texture if one is not supplied
 	if (this.texture != null) {
 		img.src = this.texture;
 		this.texture = tex;
@@ -87,12 +97,22 @@ Model.prototype.drawModel = function(wireframe) {
 	gl.vertexAttribPointer(aTextureCoord, 2, gl.FLOAT, false, 0, 0);
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, this.texture);
+	if (this.indexBuffId != null) {
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffId);
+	}
 
 	// draw
-	if (!wireframe)
-		gl.drawArrays(gl.TRIANGLES, 0, this.vertices.length / 3);
-	else
-		gl.drawArrays(gl.LINES, 0, this.vertices.length / 3);
+	if (this.indexBuffId != null) {
+		if (!wireframe)
+			gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);
+		else
+			gl.drawElements(gl.LINES, this.indices.length, gl.UNSIGNED_SHORT, 0);
+	} else {
+		if (!wireframe)
+			gl.drawArrays(gl.TRIANGLES, 0, this.vertices.length / 3);
+		else
+			gl.drawArrays(gl.LINES, 0, this.vertices.length / 3);
+	}
 }
 
 Model.prototype.setTexture = function(texture, coords) {
@@ -100,6 +120,66 @@ Model.prototype.setTexture = function(texture, coords) {
 	this.texture = texture;
 	this.textureCoords = coords;
 }
+
+var MakeSphere = function(longitudeBands, latitudeBands, radius) {
+	var vertexPositionData = [];
+	var colors = [];
+	var indexData = [];
+	var texCoords = [];
+	for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
+	    var theta = latNumber * Math.PI / latitudeBands;
+	    var sinTheta = Math.sin(theta);
+	    var cosTheta = Math.cos(theta);
+
+	    for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
+	        var phi = longNumber * 2 * Math.PI / longitudeBands;
+	        var sinPhi = Math.sin(phi);
+	        var cosPhi = Math.cos(phi);
+
+	        var x = cosPhi * sinTheta;
+	        var y = cosTheta;
+	        var z = sinPhi * sinTheta;
+					var u = 1 - (longNumber / longitudeBands);
+        	var v = 1 - (latNumber / latitudeBands);
+
+	        colors = [[1.0, 1.0, 0.3, 1.0]];
+	        vertexPositionData.push(radius * x);
+	        vertexPositionData.push(radius * y);
+	        vertexPositionData.push(radius * z);
+					texCoords.push(u);
+					texCoords.push(v);
+	    }
+	}
+	for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
+		for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
+			var first = (latNumber * (longitudeBands + 1)) + longNumber;
+			var second = first + longitudeBands + 1;
+			indexData.push(first);
+			indexData.push(second);
+			indexData.push(first + 1);
+
+			indexData.push(second);
+			indexData.push(second + 1);
+			indexData.push(first + 1);
+		}
+	}
+
+	var sphere = new Model(vertexPositionData);
+	sphere.indices = indexData;
+	sphere.textureCoords = texCoords;
+	sphere.colors = [];
+	for(var i = 0; i < sphere.vertices.length / 3; i++) {
+		sphere.colors.push(1.0);
+		sphere.colors.push(1.0);
+		sphere.colors.push(1.0);
+		sphere.colors.push(1.0);
+	}
+	return sphere;
+}
+
+var sphere = MakeSphere(10, 10, 2);
+sphere.xPos = 10;
+console.log(sphere);
 
 var axis = new Model([
 	0.0, 0.0, -10.0,
@@ -713,4 +793,4 @@ cube.xRot = 20.0;
 cube.yRot = 50.0;
 
 // axis must always be the first element
-var models = [axis, floor, cube];
+var models = [axis, floor, cube, sphere];

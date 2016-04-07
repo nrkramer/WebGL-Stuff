@@ -16,7 +16,10 @@ var cameraPosYA = 0.0;
 var cameraPosZA = 0.0;
 var cameraPosX = 5.15;
 var cameraPosY = 1.0;
-var cameraPosZ = 11.35;
+var cameraPosZ = -11.35;
+
+// Light
+var lightPos = vec3(10.0, 0.0, 0.0);
 
 // Attributes
 var aPosition;
@@ -97,15 +100,14 @@ window.onload = function init(){
 	});
 	document.addEventListener('keydown', function(event) {
 		// for 'w'
-		if(event.keyCode == 87)
-		{
-			cameraPosZA = -1.0;
-		} else if (event.keyCode == 83) { // for 's'
+		if(event.keyCode == 87) { // for 'w'
 			cameraPosZA = 1.0;
+		} else if (event.keyCode == 83) { // for 's'
+			cameraPosZA = -1.0;
 		} else if (event.keyCode == 65) { // for 'a'
-			cameraPosXA = -1.0;
-		} else if (event.keyCode == 68) { // for 'd'
 			cameraPosXA = 1.0;
+		} else if (event.keyCode == 68) { // for 'd'
+			cameraPosXA = -1.0;
 		} else if (event.keyCode == 81) { // for 'q'
 			cameraPosYA = 1.0;
 		} else if (event.keyCode == 69) { // for 'e'
@@ -143,8 +145,8 @@ window.onload = function init(){
 		};
 		if (event.buttons == 1) { // holding left down
 			// update camera
-			cameraRotX -= changes.x / 150.0;
-			cameraRotY += changes.y / 150.0;
+			cameraRotY += changes.x / 5.0;
+			cameraRotX += changes.y / 5.0;
 		}
 	});
 
@@ -192,8 +194,9 @@ function updateCamera() {
 	var xRot = vec3(1.0 * Math.cos(cameraRotX), 0.0, -1.0 * Math.sin(cameraRotX));
 	var yRot = vec3(0.0, 1.0 * Math.sin(cameraRotY), 1.0 * Math.cos(cameraRotY));
 	var eye = vec3(cameraPosX, cameraPosY, cameraPosZ);
-	var at = add(add(yRot, xRot), eye);
-	viewMatrix = lookAt(eye, at, vec3(0.0, 1.0, 0.0));
+	var at = add(add(xRot, yRot), eye);
+	var rotationMat = mult(rotate(cameraRotX, vec3(1.0, 0.0, 0.0)), rotate(cameraRotY, vec3(0.0, 1.0, 0.0)));
+	viewMatrix = mult(mult(rotationMat, translate(cameraPosX, cameraPosY, cameraPosZ)), lookAt(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), vec3(0.0, 1.0, 0.0)));
 	gl.uniformMatrix4fv(viewPtr, 0, flatten(viewMatrix));
 	// update HTML
 	$("#positionText").html("Position: (" + cameraPosX.toFixed(2) + ", " + cameraPosY.toFixed(2) + ", " + cameraPosZ.toFixed(2) + ")");
@@ -203,7 +206,7 @@ function updateCamera() {
 // auto-move models
 function moveModels() {
 	if (autoMove) {
-		for(var i = 3; i < models.length; i++) {
+		for(var i = models.length - 1; i < models.length; i++) {
 			if (models[i].showcase) {
 				models[i].xPos = 10.0 * Math.cos(frame / 60.0);
 				models[i].zPos = 10.0 * Math.sin(frame / 60.0);

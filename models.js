@@ -405,7 +405,6 @@ var phone_case = new Model([
   	0.0, 1.0, 0.0, 1.0, //Blue and Alpha
   	0.0, 1.0, 0.0, 1.0  //Red and Alpha
 ];
-
 phone_case.zPos = -20.0;
 phone_case.xPos = 2.0;
 phone_case.yPos = 0.0;

@@ -19,7 +19,7 @@ var cameraPosY = 1.0;
 var cameraPosZ = -11.35;
 
 // Light
-var lightPos = vec3(10.0, 0.0, 0.0);
+var lightPosPtr;
 
 // Attributes
 var aPosition;
@@ -70,6 +70,9 @@ window.onload = function init(){
 	projectionPtr = gl.getUniformLocation(program, "projection");
 	normalMatPtr = gl.getUniformLocation(program, "normalMatrix");
 
+	// Light position pointer
+	lightPosPtr = gl.getUniformLocation(program, "lightPos");
+
 	// assign projection matrix
 	gl.uniformMatrix4fv(projectionPtr, 0, flatten(projectionMatrix));
 	// set initial camera up
@@ -81,12 +84,13 @@ window.onload = function init(){
 	// Color attribute pointer
 	aVertexColor = gl.getAttribLocation(program, "aVertexColor");
 	gl.enableVertexAttribArray(aVertexColor);
+	// Normal attribute pointer
+	aNormal = gl.getAttribLocation(program, "aNormal");
+	gl.enableVertexAttribArray(aNormal);
 	// Texture attribute pointer
 	aTextureCoord = gl.getAttribLocation(program, "aTextureCoord");
 	gl.enableVertexAttribArray(aTextureCoord);
 	gl.uniform1i(gl.getUniformLocation(program, "uSampler"), 0);
-	// Normal attribute pointer
-	aNormal = gl.getAttribLocation(program, "aNormal");
 
 	for(var i = 0; i < models.length; i++) {
 		models[i].bufferData();
@@ -210,7 +214,7 @@ function moveModels() {
 			if (models[i].showcase) {
 				models[i].xPos = 10.0 * Math.cos(frame / 60.0);
 				models[i].zPos = 10.0 * Math.sin(frame / 60.0);
-				models[i].yPos = 10.0 * Math.sin(frame / 60.0);
+				gl.uniform3f(lightPosPtr, models[i].xPos, models[i].yPos, models[i].zPos);
 			}
 		}
 	}
@@ -238,16 +242,14 @@ function render() {
 	rotateModels();
 	moveModels();
 
-	// render axis
-	if (showAxis) {
-		gl.uniformMatrix4fv(modelPtr, 0, flatten(models[0].getMatrix())); // assign new model matrix
-		models[0].drawModel(true);
-	}
-
-	for(var i = 1; i < models.length; i++) {
+	for(var i = 0; i < models.length; i++) {
 		var modelMatrix = models[i].getMatrix();
 		gl.uniformMatrix4fv(modelPtr, 0, flatten(modelMatrix)); // assign new model matrix
-		gl.uniformMatrix4fv(normalMatPtr, 0, flatten(transpose(inverse(mult(modelMatrix, viewMatrix))))); // get normal matrix
-		models[i].drawModel(false);
+		gl.uniformMatrix4fv(normalMatPtr, 0, flatten(transpose(inverse(mult(viewMatrix, modelMatrix))))); // get normal matrix
+		if (i == 0)
+			models[i].drawModel(true);
+		else {
+			models[i].drawModel(false);
+		}
 	}
 }

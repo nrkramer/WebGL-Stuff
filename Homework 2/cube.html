@@ -1,0 +1,50 @@
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+		<title>Cube</title>
+
+		<script id="vertex-shader" type="x-shader/x-vertex">
+			attribute vec4 vPosition;
+			attribute vec4 vVertexColor;
+
+			// Matrices to create 3D perspective. Make the GPU do the multiplications
+			uniform mat4 model;
+			uniform mat4 view;
+			uniform mat4 projection;
+
+			varying mediump vec4 vColor;
+			void main() {
+				vColor = vVertexColor; // send color to fragment shader
+				gl_Position = projection * view * model * vPosition; // this is how its done in case you were wondering
+			}
+		</script>
+
+		<script id="fragment-shader" type="x-shader/x-fragment">
+			precision mediump float;
+			varying mediump vec4 vColor;
+			void main() {
+				gl_FragColor = vColor;
+			}
+		</script>
+
+		<!--  JQUERY STUFF FOR COOL UI THINGS -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+		<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+ 		<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+
+		<script type="text/javascript" src="webgl-utils.js"></script><style type="text/css"></style>
+		<script type="text/javascript" src="initShaders.js"></script>
+		<script type="text/javascript" src="MV.js"></script>
+		<script type="text/javascript" src="models.js"></script>
+		<script type="text/javascript" src="cube.js"></script>
+	</head>
+
+	<body style="background:darkblue; padding:0px; margin:0px;">
+			<canvas id="gl-canvas" width="512" height="512" style="z-index:0; padding:0px; margin:0px;">
+				Oops... your browser doesn't support the HTML5 canvas element
+			</canvas>
+			<inline style="width:100px; height:30px; z-index:1; block:none; position:absolute; left:10px; top:10px; border:2px solid #990000; border-radius:5px; background-color:#8c8c8c; opacity:0.7;">
+				<input id="rotateCheck" checked="true" type="checkbox" style="width:70px; position:relative; left:-20px; top:4px;"><label style="position:relative; top:-13px; left:30px; color:white; font:14px Helvetica;">Rotate</label></input>
+			</inline>
+	</body>
+</html>
